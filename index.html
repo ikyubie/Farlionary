@@ -19826,34 +19826,74 @@ async function showDefinition(word){
   const requestId = ++definitionRequestId;
   const title = String(word || '').trim();
   definitionTitle.textContent = title;
-  definitionStatus.textContent = 'Loading definition from English Wiktionary…';
   definitionContent.textContent = '';
-  definitionSourceLink.href = 'https://en.wiktionary.org/wiki/' + encodeURIComponent(title.replace(/ /g, '_'));
   definitionOverlay.hidden = false;
   document.body.style.overflow = 'hidden';
   definitionClose.focus();
+  definitionSourceLink.href = 'https://en.wiktionary.org/wiki/' + encodeURIComponent(title.replace(/ /g, '_'));
+
+  // Definitions are intentionally only available for the English dictionary.
+  if (language !== 'en') {
+    definitionStatus.textContent = 'Definitions are only available for the English dictionary.';
+    return;
+  }
+
+  definitionStatus.textContent = 'Looking up the English entry on Wiktionary…';
 
   try {
-    const apiUrl = 'https://en.wiktionary.org/api/rest_v1/page/summary/' + encodeURIComponent(title.replace(/ /g, '_'));
-    const response = await fetch(apiUrl, {headers: {'Accept':'application/json'}});
+    const api = 'https://en.wiktionary.org/w/api.php?origin=*&format=json&action=parse&prop=sections&page='
+      + encodeURIComponent(title.replace(/ /g, '_'));
+    const sectionsResponse = await fetch(api, {headers: {'Accept':'application/json'}});
     if (requestId !== definitionRequestId) return;
-    if (response.status === 404) {
+    if (!sectionsResponse.ok) throw new Error('Wiktionary request failed (' + sectionsResponse.status + ').');
+    const sectionsData = await sectionsResponse.json();
+
+    if (sectionsData.error || !sectionsData.parse || !Array.isArray(sectionsData.parse.sections)) {
       definitionStatus.textContent = 'No definition found on Wiktionary.';
       return;
     }
-    if (!response.ok) throw new Error('Wiktionary request failed (' + response.status + ').');
-    const data = await response.json();
+
+    // English Wiktionary pages contain entries in many languages. Only inspect
+    // the section headed "English", never the Indonesian or other-language entry.
+    const englishSection = sectionsData.parse.sections.find(section =>
+      String(section.line || '').trim().toLowerCase() === 'english'
+    );
+    if (!englishSection) {
+      definitionStatus.textContent = 'No English definition found on Wiktionary.';
+      return;
+    }
+
+    const sectionApi = 'https://en.wiktionary.org/w/api.php?origin=*&format=json&action=parse&prop=text&page='
+      + encodeURIComponent(title.replace(/ /g, '_')) + '&section=' + encodeURIComponent(englishSection.index);
+    const sectionResponse = await fetch(sectionApi, {headers: {'Accept':'application/json'}});
     if (requestId !== definitionRequestId) return;
-    const extract = typeof data.extract === 'string' ? data.extract.trim() : '';
-    if (!extract || data.type === 'disambiguation' || data.type === 'no-extract') {
-      definitionStatus.textContent = 'No definition found on Wiktionary.';
+    if (!sectionResponse.ok) throw new Error('Wiktionary request failed (' + sectionResponse.status + ').');
+    const sectionData = await sectionResponse.json();
+    if (!sectionData.parse || !sectionData.parse.text || !sectionData.parse.text['*']) {
+      definitionStatus.textContent = 'No English definition found on Wiktionary.';
+      return;
+    }
+
+    const parsed = new DOMParser().parseFromString(sectionData.parse.text['*'], 'text/html');
+    const definitions = [];
+    parsed.querySelectorAll('ol > li').forEach(li => {
+      // Keep definition text but exclude nested examples/quotations to avoid
+      // turning a whole Wiktionary entry into a huge block of text.
+      const clone = li.cloneNode(true);
+      clone.querySelectorAll('ol, ul, dl, table, .qualifier-content, .nyms').forEach(node => node.remove());
+      const text = (clone.textContent || '').replace(/\s+/g, ' ').trim();
+      if (text && !definitions.includes(text)) definitions.push(text);
+    });
+
+    if (requestId !== definitionRequestId) return;
+    if (!definitions.length) {
+      definitionStatus.textContent = 'No English definition found on Wiktionary.';
       return;
     }
     definitionStatus.textContent = '';
-    definitionContent.textContent = extract;
-    if (data.content_urls && data.content_urls.desktop && data.content_urls.desktop.page) {
-      definitionSourceLink.href = data.content_urls.desktop.page;
-    }
+    definitionContent.textContent = definitions.slice(0, 12).map((definition, index) =>
+      (index + 1) + '. ' + definition
+    ).join('\n\n');
   } catch (error) {
     if (requestId !== definitionRequestId) return;
     definitionStatus.textContent = 'Could not load the definition. Check your internet connection and try again.';
