@@ -1,4 +1,4 @@
-Farlionary
+Farlionary.
 
 Farlionary is a word search tool primarily designed for finding English words. It provides access to a large collection of words gathered from various sources, making it useful for word searches and other word-related projects.
 
@@ -64,5 +64,5 @@ If you have ideas for improvements or additional word collections, feel free to 
 <p align="center">
   <strong>Farlionary</strong>
   <br>
-  A large collection of words, ready to be explored.
+  Made by Farlan
 </p>
