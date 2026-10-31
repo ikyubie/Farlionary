@@ -79,10 +79,6 @@ Farlionary would not be possible without the various dictionaries, word lists, a
 
 Thanks to everyone who makes language resources accessible.
 
-License
-
-Please check the repository's license and the licenses of the individual data sources before reusing or redistributing the word collections.
-
 ---
 
 <p align="center">
