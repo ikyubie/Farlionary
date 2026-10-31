@@ -12,6 +12,8 @@ Farlionary
   <a href="#credits">Credits</a>
 </p>---
 
+https://ikyubie.github.io/Farlionary/
+
 Overview
 
 Farlionary is a lightweight word search application primarily focused on English vocabulary.
