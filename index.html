@@ -23683,8 +23683,19 @@ function resetGames(){resetChain();chooseMystery();resetMemory();resetElementGam
    const stream = new Blob([bin]).stream().pipeThrough(new DecompressionStream('gzip'));
    const text = await new Response(stream).text();
    words = text.split(/\r?\n/).map(w=>w.trim()).filter(Boolean);
-   // User-requested English dictionary entry.
-   if (!words.some(w => w.toLocaleLowerCase() === 'chaubunagungamaug')) words.push('chaubunagungamaug');
+   // User-requested English dictionary entries.
+   const customEnglishEntries = [
+     'chaubunagungamaug', 'myanmar', 'naypyidaw', 'micronation',
+     'micronations', 'sealand', 'intergovernmentalism',
+     'ilysmbidkhttybikydlmb', 'nsama', 'ily', 'ilysm', 'nsala'
+   ];
+   const existingEnglishEntries = new Set(words.map(w => w.toLocaleLowerCase()));
+   for (const entry of customEnglishEntries) {
+     if (!existingEnglishEntries.has(entry.toLocaleLowerCase())) {
+       words.push(entry);
+       existingEnglishEntries.add(entry.toLocaleLowerCase());
+     }
+   }
    englishWords = words;
    ready = true; query.disabled = false; $('#searchBtn').disabled = false;
    const loadingIndicator = document.getElementById('dictionaryLoading');
