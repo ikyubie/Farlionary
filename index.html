@@ -23505,6 +23505,27 @@ languageSelect.addEventListener('change', async()=>{
      if (!indonesianWords.length) {
        status.textContent='Loading Indonesian dictionary…';
        indonesianWords=await decodeDictionary(encodedIndonesian);
+       const customIndonesianEntries = [
+         'ngelamun', 'ngedit', 'ngelag', 'ngerti', 'ngertiin', 'ngehargain',
+         'nyembur', 'nyebur', 'nyebutin', 'nyikat', 'ngiket', 'ngikat',
+         'cebur', 'ceburin', 'menyebur', 'menyeburkan', 'keringet',
+         'keringetan', 'sepongan', 'nyepong', 'menyepong', 'ngurangin',
+         'ngulang', 'ngulas', 'ngoles', 'nambah', 'ngurang', 'nambahin',
+         'ngaliin', 'bagiin', 'ngebagiin', 'ngekaliin', 'ngenambahin',
+         'nyentak', 'nyentakin', 'nyobain', 'nyobak', 'ngonten', 'ngokang',
+         'ngilang', 'ngilangin', 'ngigit',
+         'nganu', 'nganut', 'nganggur', 'nyobain', 'ngelempar', 'gebukin',
+         'ngebuk', 'ngebukin', 'ngelemparin', 'ngedenger', 'ngedengerin',
+         'ngebicarain', 'ngeramas', 'ngeremes', 'ngirim', 'ngirimin',
+         'nerima', 'gemes', 'gemesin', 'bacain', 'ngebacain', 'tulisin'
+       ];
+       const existingIndonesianEntries = new Set(indonesianWords.map(w => w.toLocaleLowerCase()));
+       for (const entry of customIndonesianEntries) {
+         if (!existingIndonesianEntries.has(entry.toLocaleLowerCase())) {
+           indonesianWords.push(entry);
+           existingIndonesianEntries.add(entry.toLocaleLowerCase());
+         }
+       }
      }
      words=indonesianWords;
    }
@@ -23687,7 +23708,8 @@ function resetGames(){resetChain();chooseMystery();resetMemory();resetElementGam
    const customEnglishEntries = [
      'chaubunagungamaug', 'myanmar', 'naypyidaw', 'micronation',
      'micronations', 'sealand', 'intergovernmentalism',
-     'ilysmbidkhttybikydlmb', 'nsama', 'ily', 'ilysm', 'nsala'
+     'ilysmbidkhttybikydlmb', 'nsama', 'ily', 'ilysm', 'nsala',
+     'shotas', 'shotacons', 'lolicons'
    ];
    const existingEnglishEntries = new Set(words.map(w => w.toLocaleLowerCase()));
    for (const entry of customEnglishEntries) {
