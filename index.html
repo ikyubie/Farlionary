@@ -172,13 +172,6 @@ body[data-theme="lapis"]::before{opacity:.72;background:radial-gradient(ellipse 
   .profile-link-wrap a { color: var(--accent, #6b8cff); text-decoration: none; }
   .profile-link-wrap a:hover { text-decoration: underline; }
 </style>
-<link rel="icon" type="image/png" sizes="512x512" href="./logo-512.png">
-<link rel="apple-touch-icon" href="./logo-192.png">
-<link rel="manifest" href="./manifest.json">
-<meta name="theme-color" content="#7f2d28">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Farlionary">
 </head>
 <body>
 <main>
@@ -23524,6 +23517,7 @@ languageSelect.addEventListener('change', async()=>{
          'nganu', 'nganut', 'nganggur', 'nyobain', 'ngelempar', 'gebukin',
          'ngebuk', 'ngebukin', 'ngelemparin', 'ngedenger', 'ngedengerin',
          'ngebicarain', 'ngeramas', 'ngeremes', 'ngirim', 'ngirimin',
+         'gapapa',
          'nerima', 'gemes', 'gemesin', 'bacain', 'ngebacain', 'tulisin'
        ];
        const existingIndonesianEntries = new Set(indonesianWords.map(w => w.toLocaleLowerCase()));
@@ -23744,16 +23738,5 @@ function resetGames(){resetChain();chooseMystery();resetMemory();resetElementGam
  }
 })();
 </script>
-
-<script>
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./sw.js").catch((error) => {
-      console.error("Service worker registration failed:", error);
-    });
-  });
-}
-</script>
-
 </body>
 </html>
