@@ -29,8 +29,8 @@ Features
 - Fast Word Lookup — Find matching words through a simple search interface.
 - Case-Insensitive Search — Search without worrying about capitalization.
 - Downloadable Word Lists — Access word collections in plain-text format.
-- Lightweight — Runs directly in your browser as a standalone HTML file.
-
+- Lightweight
+  
 Word List
 
 The downloadable TXT collection is one of Farlionary's main components.
