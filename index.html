@@ -28,6 +28,7 @@ input{width:100%;padding:14px 15px;border:1px solid var(--line);border-radius:12
 .filters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:0;padding:16px;border:0;border-top:1px solid var(--line);border-radius:0}
 .filters .field{min-width:0}.filters label{font-size:13px}.filters input{padding:11px 12px}
 .filters-title{grid-column:1/-1;font-size:13px;color:var(--muted);font-weight:800;text-transform:uppercase;letter-spacing:.08em;margin-bottom:-4px}
+.length-filter-field{margin-top:14px;max-width:320px}.length-filter-field input{padding:11px 12px}
 input:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 20%,transparent)}
 .hint{font-size:13px;color:var(--muted);margin:8px 0 0}.row{display:flex;gap:10px;margin-top:16px;align-items:center}
 button.action{border:0;border-radius:12px;background:var(--accent);color:var(--accent-ink);font:inherit;font-weight:800;padding:13px 18px;cursor:pointer}
@@ -204,17 +205,16 @@ body[data-font-color="rainbow"] :is(main h1,main h2,main h3,main p,main label,ma
       <label id="queryLabel" for="query">Word or prefix</label>
       <input id="query" autocomplete="off" spellcheck="false" placeholder="Example: pseudo" disabled>
       <p class="hint" id="hint">Find entries that start with this sequence of letters.</p>
+      <div class="field length-filter-field"><label for="filterLength">Word length <span class="hint">(Optional)</span></label><input id="filterLength" type="text" inputmode="text" autocomplete="off" spellcheck="false" placeholder="e.g. 7, 8+, 8-"><small class="hint">7 = exactly 7 · 8+ / ≥8 = at least 8 · 8- / ≤8 = at most 8 · 15-20 = range</small></div>
       <details class="filter-disclosure">
-        <summary>Optional filters <span>Prefix · Suffix · Word length</span></summary>
-        <p id="optionalFilterLockHint" class="hint" style="grid-column:1/-1;margin:0" hidden>Must start with and Must end with are locked because the main search field is in use. Clear the main search field to unlock them.</p>
-        <div class="filters" aria-label="Optional search filters">
-        <div class="filters-title">Combine filters freely</div>
-        <div class="field"><label for="filterPrefix">Must start with</label><input id="filterPrefix" autocomplete="off" spellcheck="false" placeholder="e.g. pseudo"></div>
-        <div class="field"><label for="filterSuffix">Must end with</label><input id="filterSuffix" autocomplete="off" spellcheck="false" placeholder="e.g. x"></div>
-        <div class="field"><label for="filterLength">Word length</label><input id="filterLength" type="text" inputmode="text" autocomplete="off" spellcheck="false" placeholder="e.g. 7, 8+, 8-"><small class="hint">7 = exactly 7 · 8+ / ≥8 = at least 8 · 8- / ≤8 = at most 8 · 15-20 = range</small></div>
+        <summary>Merge fixes <span>Starts with · Ends with · Middle</span></summary>
+        <div class="filters" aria-label="Merge fixes">
+        <div class="field"><label for="filterPrefix">Starts with</label><input id="filterPrefix" autocomplete="off" spellcheck="false" placeholder="e.g. pseudo"></div>
+        <div class="field"><label for="filterSuffix">Ends with</label><input id="filterSuffix" autocomplete="off" spellcheck="false" placeholder="e.g. x"></div>
+        <div class="field"><label for="filterContains">Middle contains</label><input id="filterContains" autocomplete="off" spellcheck="false" placeholder="e.g. ph"></div>
         </div>
       </details>
-      <p class="hint">Tip: leave the main search blank to search using only these filters. Prefix, suffix, and length filters can be combined.</p>
+      <p class="hint">Using the main search automatically clears Merge fixes, and using Merge fixes automatically clears the main search. Word length can be combined with either.</p>
       <div class="row"><button class="action" id="searchBtn" type="submit" disabled>Find words</button><button class="secondary" id="clearBtn" type="button">Clear</button><button class="secondary" id="surpriseMeBtn" type="button" disabled>🎲 Surprise me</button></div>
     </form>
     <div class="status" id="status" role="status">Loading built-in dictionary…</div>
@@ -4214,27 +4214,35 @@ function scrabbleMatches(rack, pool = words) {
  }
  return out;
 }
-function updateOptionalPrefixLocks() {
-  const mainHasText = query.value.trim().length > 0;
-  $('#filterPrefix').disabled = mainHasText;
-  $('#filterSuffix').disabled = mainHasText;
-  $('#optionalFilterLockHint').hidden = !mainHasText;
+function hasMergeFixes() {
+  return ['filterPrefix','filterSuffix','filterContains'].some(id => document.getElementById(id).value.trim().length > 0);
+}
+function clearMergeFixes() {
+  ['filterPrefix','filterSuffix','filterContains'].forEach(id => { document.getElementById(id).value = ''; });
+}
+function clearMainSearch() {
+  query.value = '';
 }
 query.addEventListener('input', () => {
-  updateOptionalPrefixLocks();
+  // Main search and Merge fixes are mutually exclusive; Word length is independent.
+  if (query.value.trim()) clearMergeFixes();
   if (autoFindWordsEnabled && ready && !query.value.trim().startsWith('!')) runSearch(query.value);
 });
-['filterPrefix','filterSuffix','filterLength'].forEach(id => {
+['filterPrefix','filterSuffix','filterContains'].forEach(id => {
   document.getElementById(id).addEventListener('input', () => {
-    if (autoFindWordsEnabled && ready && !query.value.trim().startsWith('!')) runSearch(query.value);
+    if (hasMergeFixes()) clearMainSearch();
+    if (autoFindWordsEnabled && ready) runSearch('');
   });
 });
-updateOptionalPrefixLocks();
+document.getElementById('filterLength').addEventListener('input', () => {
+  if (autoFindWordsEnabled && ready && !query.value.trim().startsWith('!')) runSearch(query.value);
+});
 function runSearch(term) {
  const needle = term.trim().toLowerCase();
  const searchPool = (language === 'en' && commonWordsOnlyEnabled) ? words.filter(w => COMMON_WORDS.has(w.toLowerCase())) : words;
  const prefix = $('#filterPrefix').value.trim().toLowerCase();
  const suffix = $('#filterSuffix').value.trim().toLowerCase();
+ const middle = $('#filterContains').value.trim().toLowerCase();
  const lengthText = $('#filterLength').value.trim();
  let lengthFilter = null;
  if (lengthText !== '') {
@@ -4292,6 +4300,7 @@ function runSearch(term) {
    const lower = w.toLowerCase();
    return (!prefix || lower.startsWith(prefix)) &&
           (!suffix || lower.endsWith(suffix)) &&
+          (!middle || lower.includes(middle)) &&
           (!lengthFilter || (lengthFilter.operator === 'range' ? lower.length >= lengthFilter.min && lower.length <= lengthFilter.max :
             lengthFilter.operator === '+' || lengthFilter.operator === '≥' ? lower.length >= lengthFilter.value :
             lengthFilter.operator === '-' || lengthFilter.operator === '≤' ? lower.length <= lengthFilter.value :
@@ -4794,15 +4803,15 @@ $('#searchForm').addEventListener('submit', e=>{
  if(command==='!farlionary'){restoreActiveDictionary();return;}
  runSearch(query.value);
 });
-$('#clearBtn').addEventListener('click',()=>{query.value='';$('#filterPrefix').value='';$('#filterSuffix').value='';$('#filterLength').value='';updateOptionalPrefixLocks();currentMatches=[];currentPage=1;results.innerHTML='<div class="empty">Enter a pattern to start searching.</div>';count.textContent='No search yet';status.textContent=ready?'Dictionary ready. Enter a pattern or filters to search.':'Loading dictionary…';updatePagination();query.focus();});
+$('#clearBtn').addEventListener('click',()=>{query.value='';$('#filterPrefix').value='';$('#filterSuffix').value='';$('#filterContains').value='';$('#filterLength').value='';currentMatches=[];currentPage=1;results.innerHTML='<div class="empty">Enter a pattern to start searching.</div>';count.textContent='No search yet';status.textContent=ready?'Dictionary ready. Enter a pattern or filters to search.':'Loading dictionary…';updatePagination();query.focus();});
 const languageSelect = $('#languageSelect'), idFileWrap = $('#idFileWrap');
 const commonWordsWrap = $('#commonWordsWrap'), commonWordsToggle = $('#commonWordsToggle');
 function updateCommonWordsControl(){commonWordsWrap.hidden=language!=='en';if(language!=='en'){commonWordsToggle.checked=false;commonWordsOnlyEnabled=false;}}
-commonWordsToggle.addEventListener('change',()=>{commonWordsOnlyEnabled=commonWordsToggle.checked;if(currentMatches.length || query.value.trim() || $('#filterPrefix').value.trim() || $('#filterSuffix').value.trim() || $('#filterLength').value.trim())runSearch(query.value);});
+commonWordsToggle.addEventListener('change',()=>{commonWordsOnlyEnabled=commonWordsToggle.checked;if(currentMatches.length || query.value.trim() || hasMergeFixes() || $('#filterLength').value.trim())runSearch(query.value);});
 updateCommonWordsControl();
 function resetForDictionary(message) {
  dictionaryReversed=false;
- currentMatches=[]; currentPage=1; query.value=''; $('#filterPrefix').value=''; $('#filterSuffix').value=''; $('#filterLength').value=''; updateOptionalPrefixLocks();
+ currentMatches=[]; currentPage=1; query.value=''; $('#filterPrefix').value=''; $('#filterSuffix').value=''; $('#filterContains').value=''; $('#filterLength').value='';
  count.textContent='No search yet'; results.innerHTML='<div class="empty">Enter a pattern to start searching.</div>'; updatePagination();
  $('#dictBadge').textContent = words.length ? `${words.length.toLocaleString('en-US')} entries · ${language==='en'?'English':'Indonesian'}` : 'No dictionary loaded';
  status.textContent=message;
