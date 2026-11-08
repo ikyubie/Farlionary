@@ -45,16 +45,6 @@ It can be used as a starting point for projects that require word data, such as:
 
 The word collections are compiled from various sources. Please refer to the original sources and their respective licenses before redistributing or using the data in other projects.
 
-Getting Started
-
-Web Application
-
-1. Download the HTML file from this repository.
-2. Open it in your preferred web browser.
-3. Select the language you want to search.
-4. Type a word into the search field.
-5. Explore the matching entries.
-
 TXT Word List
 
 1. Download the available TXT file.
